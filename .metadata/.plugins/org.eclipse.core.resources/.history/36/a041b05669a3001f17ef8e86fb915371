@@ -250,15 +250,6 @@ void cmd_parser_fsm(){
 		case WAITING_RESPONSE:
 			if (index_buffer<=0){
 				waiting();
-				if (not_response){
-					status=NORMAL;
-					not_response=0;
-					count_waiting=0;
-				}
-			}else{
-				not_response=0;
-				count_waiting=0;
-				cmd_parser_state=RECEIVE;
 			}
 		case RECEIVE:
 			if (flag){

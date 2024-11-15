@@ -256,9 +256,7 @@ void cmd_parser_fsm(){
 					count_waiting=0;
 				}
 			}else{
-				not_response=0;
-				count_waiting=0;
-				cmd_parser_state=RECEIVE;
+
 			}
 		case RECEIVE:
 			if (flag){

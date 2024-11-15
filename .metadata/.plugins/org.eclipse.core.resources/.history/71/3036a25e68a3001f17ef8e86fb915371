@@ -11,7 +11,6 @@
 #include "tim.h"
 
 extern uint16_t timer2_flag;
-extern uint16_t timer1_flag;
 
 void timer_init();
 void setTimer2(uint16_t duration);
