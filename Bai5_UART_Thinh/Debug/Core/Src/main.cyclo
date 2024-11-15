@@ -1,0 +1,7 @@
+../Core/Src/main.c:77:5:main	2
+../Core/Src/main.c:130:6:SystemClock_Config	3
+../Core/Src/main.c:171:6:system_init	1
+../Core/Src/main.c:185:6:test_LedDebug	2
+../Core/Src/main.c:192:6:test_button	3
+../Core/Src/main.c:201:6:test_Uart	2
+../Core/Src/main.c:217:6:Error_Handler	1

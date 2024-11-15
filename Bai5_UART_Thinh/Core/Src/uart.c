@@ -5,6 +5,15 @@
  *      Author: HaHuyen
  */
 #include "uart.h"
+#include <stdio.h>
+
+static uint32_t mypow(uint8_t base, uint8_t exp) {
+    uint32_t result = 1;
+    for(uint8_t i = 0; i < exp; i++) {
+        result *= base;
+    }
+    return result;
+}
 
 uint8_t receive_buffer1 = 0;
 uint8_t msg[100];
@@ -48,55 +57,51 @@ void uart_init_rs232() {
     HAL_UART_Receive_IT(&huart1, &receive_buffer1, 1);
 }
 
-void uart_Rs232SendString(uint8_t* str){
-	HAL_UART_Transmit(&huart1, (void*)msg, sprintf((void*)msg,"%s",str), 10);
+void uart_Rs232SendString(const uint8_t* str) {
+    HAL_UART_Transmit(&huart1, (void*)msg, sprintf((void*)msg,"%s",str), 10);
 }
 
-void uart_Rs232SendBytes(uint8_t* bytes, uint16_t size){
-	HAL_UART_Transmit(&huart1, bytes, size, 10);
+void uart_Rs232SendBytes(uint8_t* bytes, uint16_t size) {
+    HAL_UART_Transmit(&huart1, bytes, size, 10);
 }
 
-void uart_Rs232SendNum(uint32_t num){
-	if(num == 0){
-		uart_Rs232SendString("0");
-		return;
-	}
+void uart_Rs232SendNum(uint32_t num) {
+    if(num == 0){
+        uart_Rs232SendString((uint8_t*)"0");
+        return;
+    }
     uint8_t num_flag = 0;
     int i;
-	if(num < 0) uart_Rs232SendString("-");
+    if(num < 0) uart_Rs232SendString((uint8_t*)"-");
     for(i = 10; i > 0; i--)
     {
         if((num / mypow(10, i-1)) != 0)
         {
             num_flag = 1;
-            sprintf((void*)msg,"%d",num/mypow(10, i-1));
+            sprintf((void*)msg,"%lu",num/mypow(10, i-1));
             uart_Rs232SendString(msg);
         }
         else
         {
             if(num_flag != 0)
-            	uart_Rs232SendString("0");
+                uart_Rs232SendString((uint8_t*)"0");
         }
-        num %= mypow(10, i-1);
+        num = num % mypow(10, i-1);
     }
 }
 
-void uart_Rs232SendNumPercent(uint32_t num)
-{
-	sprintf((void*)msg,"%ld",num/100);
-    uart_Rs232SendString(msg);
-    uart_Rs232SendString(".");
+void uart_Rs232SendNumPercent(uint32_t num) {
+    sprintf((void*)msg,"%ld",num/100);
+    uart_Rs232SendString((const uint8_t*)msg);
+    uart_Rs232SendString((const uint8_t*)".");
     sprintf((void*)msg,"%ld",num%100);
-    uart_Rs232SendString(msg);
+    uart_Rs232SendString((const uint8_t*)msg);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-    if(huart->Instance == USART1) {
-        // Store received byte in ring buffer
+    if (huart->Instance == USART1) {
         ring_buffer_put(&uart_ring_buffer, receive_buffer1);
-        uart_data_ready = 1;  // Set flag for main loop
-        
-        // Restart interrupt reception
+        uart_data_ready = 1;
         HAL_UART_Receive_IT(&huart1, &receive_buffer1, 1);
     }
 }

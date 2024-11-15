@@ -109,32 +109,17 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  // while (1)
-  // {
-  //   /* USER CODE END WHILE */
-	//   while(!flag_timer2);
-	//   flag_timer2 = 0;
-	//   button_Scan();
-	//   test_LedDebug();
-	//   ds3231_ReadTime();
-	//   test_Uart();
-  //   /* USER CODE BEGIN 3 */
-  // }
-    uart_init_rs232();
-    
-    while (1) {
-        if (uart_data_ready) {
-            uint8_t data;
-            while (ring_buffer_get(&uart_ring_buffer, &data)) {
-                // Process received data here
-                // For example, echo it back:
-                HAL_UART_Transmit(&huart1, &data, 1, 10);
-            }
-            uart_data_ready = 0;
-        }
-        
-        /* Other main loop tasks */
-    }
+  while (1)
+  {
+    /* USER CODE END WHILE */
+	  while(!flag_timer2);
+	  flag_timer2 = 0;
+	  button_Scan();
+	  test_LedDebug();
+	  ds3231_ReadTime();
+	  test_Uart();
+    /* USER CODE BEGIN 3 */
+  }
   /* USER CODE END 3 */
 }
 
@@ -213,15 +198,15 @@ void test_button(){
 	}
 }
 
-void test_Uart(){
-	if(button_count[12] == 1){
-		uart_Rs232SendNum(ds3231_hours);
-		uart_Rs232SendString(":");
-		uart_Rs232SendNum(ds3231_min);
-		uart_Rs232SendString(":");
-		uart_Rs232SendNum(ds3231_sec);
-		uart_Rs232SendString("\n");
-	}
+void test_Uart(void) {
+    if(button_count[12] == 1){
+        uart_Rs232SendNum(ds3231_hours);
+        uart_Rs232SendString((uint8_t*)":");
+        uart_Rs232SendNum(ds3231_min);
+        uart_Rs232SendString((uint8_t*)":");
+        uart_Rs232SendNum(ds3231_sec);
+        uart_Rs232SendString((uint8_t*)"\n");
+    }
 }
 /* USER CODE END 4 */
 
