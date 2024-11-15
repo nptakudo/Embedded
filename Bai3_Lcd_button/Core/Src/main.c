@@ -223,11 +223,11 @@ void test_button(){
 }
 void test_lcd(){
 	lcd_Fill(0, 0, 240, 20, BLUE);
-	lcd_StrCenter(0, 2, "Hello World !!!", RED, BLUE, 16, 1);
-	lcd_ShowStr(20, 30, "Test lcd screen", WHITE, RED, 24, 0);
+	lcd_StrCenter(0, 2, "Traffic Light", RED, YELLOW, 16, 1);
+	// lcd_ShowStr(20, 30, "Test lcd screen", WHITE, RED, 24, 0);
 	lcd_DrawCircle(60, 120, GREEN, 40, 1);
 	lcd_DrawCircle(160, 120, BRED, 40, 0);
-	lcd_ShowPicture(80, 200, 90, 90, gImage_logo);
+	// lcd_ShowPicture(80, 200, 90, 90, gImage_logo);
 }
 /* USER CODE END 4 */
 
