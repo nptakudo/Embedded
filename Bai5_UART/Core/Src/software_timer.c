@@ -14,6 +14,7 @@ uint16_t timer2_flag = 0;
 uint16_t timer2_counter = 0;
 uint16_t timer2_MUL = 0;
 
+
 void timer_init(){
 	HAL_TIM_Base_Start_IT(&htim2);
 }
