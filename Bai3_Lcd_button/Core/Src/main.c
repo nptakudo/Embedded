@@ -23,6 +23,7 @@
 #include "tim.h"
 #include "gpio.h"
 #include "fsmc.h"
+#include "traffic_light.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -39,6 +40,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MODE_BUTTON      0
+#define MODIFY_BUTTON    3  
+#define CONFIRM_BUTTON   12
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -103,7 +107,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   system_init();
   lcd_Clear(WHITE);
-  test_lcd();
+  // test_lcd();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -113,7 +117,9 @@ int main(void)
 	  while(!flag_timer2);
 	  flag_timer2 = 0;
 	  button_Scan();
-	  test_button();
+	  traffic_FSM();
+	  traffic_HandleButtons();
+	  // test_button();
 
     /* USER CODE END WHILE */
 
@@ -176,6 +182,7 @@ void system_init(){
 	  button_init();
 	  lcd_init();
 	  setTimer2(50);
+	  traffic_Init();
 }
 
 uint8_t count_led_debug = 0;

@@ -123,3 +123,49 @@ void traffic_DrawLights(void) {
     sprintf(buf, "R:%d G:%d Y:%d", timing.redTime, timing.greenTime, timing.yellowTime);
     lcd_ShowStr(10, 220, buf, BLACK, WHITE, 16, 0);
 }
+
+void traffic_HandleButtons(void) {
+    static uint8_t tempTiming = 0;
+    
+    // Mode button (assuming button 0)
+    if (button_count[0] == 1) {
+        currentMode = (currentMode % 4) + 1;
+        if (currentMode != MODE_NORMAL) {
+            switch (currentMode) {
+                case MODE_RED_MODIFY:
+                    tempTiming = timing.redTime;
+                    break;
+                case MODE_GREEN_MODIFY:
+                    tempTiming = timing.greenTime;
+                    break;
+                case MODE_YELLOW_MODIFY:
+                    tempTiming = timing.yellowTime;
+                    break;
+            }
+        }
+    }
+    
+    // Increment button (assuming button 1)
+    if (currentMode != MODE_NORMAL && button_count[1] == 1) {
+        tempTiming = (tempTiming % 99) + 1;
+        char buf[32];
+        sprintf(buf, "New Value: %d", tempTiming);
+        lcd_ShowStr(10, 240, buf, BLACK, WHITE, 16, 0);
+    }
+    
+    // Confirm button (assuming button 2)
+    if (currentMode != MODE_NORMAL && button_count[2] == 1) {
+        switch (currentMode) {
+            case MODE_RED_MODIFY:
+                timing.redTime = tempTiming;
+                break;
+            case MODE_GREEN_MODIFY:
+                timing.greenTime = tempTiming;
+                break;
+            case MODE_YELLOW_MODIFY:
+                timing.yellowTime = tempTiming;
+                break;
+        }
+        lcd_Fill(10, 240, 200, 256, WHITE); // Clear "New Value" text
+    }
+}

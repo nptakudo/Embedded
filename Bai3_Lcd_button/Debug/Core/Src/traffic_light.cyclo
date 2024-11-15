@@ -1,0 +1,4 @@
+../Core/Src/traffic_light.c:10:6:traffic_Init	1
+../Core/Src/traffic_light.c:16:6:traffic_FSM	11
+../Core/Src/traffic_light.c:61:6:traffic_DrawLights	16
+../Core/Src/traffic_light.c:127:6:traffic_HandleButtons	15
