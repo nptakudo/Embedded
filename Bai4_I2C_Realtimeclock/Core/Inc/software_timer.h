@@ -10,7 +10,7 @@
 
 #include "tim.h"
 
-extern uint16_t flag_timer2;
+extern uint16_t timer2_flag;
 
 void timer_init();
 void setTimer2(uint16_t duration);
