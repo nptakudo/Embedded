@@ -8,6 +8,7 @@
 
 uint8_t receive_buffer1 = 0;
 uint8_t index_buffer = 0;
+int flag = 0;
 uint8_t rcv[100];
 uint8_t msg[100];
 
@@ -62,8 +63,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 		// rs232 isr
 		// can be modified
 		HAL_UART_Transmit(&huart1, &receive_buffer1, 1, 10);
-		rcv[index_buffer++] = receive_buffer1;
-		if (index_buffer == 100) index_buffer = 0;
+		if (receive_buffer1 != '!'){
+			rcv[index_buffer++] = receive_buffer1;
+			if (index_buffer == 100) index_buffer = 0;
+		}else{
+			flag=1;
+		}
 		// turn on the receive interrupt
 		HAL_UART_Receive_IT(&huart1, &receive_buffer1, 1);
 	}

@@ -11,7 +11,10 @@
 #include <stdio.h>
 #include "utils.h"
 
-uint8_t rcv[100];
+extern uint8_t rcv[100];
+extern uint8_t receive_buffer1;
+extern uint8_t index_buffer;
+extern int flag;
 
 void uart_init_rs232();
 

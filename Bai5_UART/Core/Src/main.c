@@ -55,6 +55,9 @@
 #define SET_MONTH       5
 #define SET_YEAR        6
 #define IDLE			7
+#define REQUEST			8
+#define RECEIVE			9
+#define FINISH 			10
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -70,6 +73,8 @@ int statusModifying = SET_HOUR;
 int hourTemp = 9,minTemp = 1,secTemp = 0,dayTemp = 6,dateTemp = 15,monthTemp = 11,yearTemp = 24;
 int hourAlarm = 0, minAlarm = 0;
 int timeBlink = 0;
+int n = 0;
+int cmd_parser_state = IDLE;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -157,8 +162,7 @@ int main(void)
 		button_Scan();
         fsm();
         displayScreen();
-        test_Uart();
-        test_receive();
+//        test_Uart();
 
     /* USER CODE END WHILE */
 
@@ -166,6 +170,8 @@ int main(void)
 	}
   /* USER CODE END 3 */
 }
+
+
 
 /**
   * @brief System Clock Configuration
@@ -226,8 +232,25 @@ void system_init() {
 	setTimer2(50);
 }
 
-void test_receive(){
-	lcd_ShowStr(20, 210, rcv, RED, BLACK, 24, 0);
+void cmd_parser_fsm(){
+	switch (cmd_parser_state){
+		case REQUEST:
+			uart_Rs232SendString("Request!!");
+			cmd_parser_state = RECEIVE;
+			break;
+		case RECEIVE:
+			if (flag){
+				sscanf((const char *)rcv, "%d", &n);
+				clear_buffer();
+				cmd_parser_state = FINISH;
+				flag=0;
+			}
+			break;
+		case FINISH:
+			break;
+		case IDLE:
+			break;
+	}
 }
 
 void test_Uart(){
@@ -343,6 +366,11 @@ void displayDay(int num, int isBlink) {
 	    }
 	}
 	else convertDay(num);
+}
+
+void clear_buffer() {
+	memset(rcv, 0, 100);
+	index_buffer = 0;
 }
 
 void displayDate(int num, int isBlink) {
@@ -541,36 +569,41 @@ void modifyTimeFsm() {
 	switch(statusModifying){
 		case SET_HOUR:
 			lcd_ShowStr(20, 50, "Updating hour:", RED, BLACK, 24, 0);
-			setHour();
-			if(IsButtonSave()) {
-				ds3231_Write(ADDRESS_HOUR, hourTemp);
+			cmd_parser_fsm();
+			if (cmd_parser_state == FINISH){
+				ds3231_Write(ADDRESS_HOUR, n);
+				hourTemp = n;
 				statusModifying = SET_MIN;
+				cmd_parser_state = REQUEST;
 				lcd_Clear(BLACK);
 			}
 			break;
 
 		case SET_MIN:
 			lcd_ShowStr(20, 50, "Updating minute:", RED, BLACK, 24, 0);
-			setMin();
-			if(IsButtonSave()) {
-				ds3231_Write(ADDRESS_MIN, minTemp);
+			cmd_parser_fsm();
+			if (cmd_parser_state == FINISH){
+				ds3231_Write(ADDRESS_MIN, n);
+				minTemp = n;
 				statusModifying = SET_SEC;
+				cmd_parser_state = REQUEST;
 				lcd_Clear(BLACK);
 			}
 			break;
 
 		case SET_SEC:
 			lcd_ShowStr(20, 50, "Updating sec:", RED, BLACK, 24, 0);
-			setSec();
-			if(IsButtonSave()) {
-				ds3231_Write(ADDRESS_SEC, secTemp);
+			cmd_parser_fsm();
+			if (cmd_parser_state == FINISH){
+				ds3231_Write(ADDRESS_SEC, n);
+				secTemp = n;
 				statusModifying = SET_DAY;
+				cmd_parser_state = IDLE;
 				lcd_Clear(BLACK);
 			}
 			break;
 
 		case SET_DAY:
-			lcd_ShowStr(20, 50, "Updating day:", RED, BLACK, 24, 0);
 			setDay();
 			if(IsButtonSave()) {
 				ds3231_Write(ADDRESS_DAY, dayTemp);
@@ -580,7 +613,6 @@ void modifyTimeFsm() {
 			break;
 
 		case SET_DATE:
-			lcd_ShowStr(20, 50, "Updating date:", RED, BLACK, 24, 0);
 			setDate();
 			if(IsButtonSave()) {
 				ds3231_Write(ADDRESS_DATE, dateTemp);
@@ -590,7 +622,6 @@ void modifyTimeFsm() {
 			break;
 
 		case SET_MONTH:
-			lcd_ShowStr(20, 50, "Updating month:", RED, BLACK, 24, 0);
 			setMonth();
 			if(IsButtonSave()) {
 				ds3231_Write(ADDRESS_MONTH, monthTemp);
@@ -600,7 +631,6 @@ void modifyTimeFsm() {
 			break;
 
 		case SET_YEAR:
-			lcd_ShowStr(20, 50, "Updating year:", RED, BLACK, 24, 0);
 			setYear();
 			if(IsButtonSave()) {
 				ds3231_Write(ADDRESS_YEAR, yearTemp);
@@ -649,6 +679,7 @@ void fsm()
             if(IsButtonMode()) {
                 status = MODIFY_TIME;
             	statusModifying = SET_HOUR;
+            	cmd_parser_state = REQUEST;
             }
             break;
         case MODIFY_TIME:
@@ -695,35 +726,19 @@ unsigned char IsButtonSave()
         return 0;
 }
 
-void setHour()
+void setHour(int hour)
 {
-    if(IsButtonUp())
-    {
-        hourTemp++;
-        if(hourTemp > 23)
-            hourTemp = 0;
-    }
+    hourTemp = hour%24;
 }
 
-void setMin()
+void setMin(int min)
 {
-    if(IsButtonUp())
-    {
-        minTemp++;
-        if(minTemp > 59)
-            minTemp = 0;
-    }
+    minTemp = min%60;
 }
 
-void setSec()
+void setSec(int sec)
 {
-
-    if(IsButtonUp())
-    {
-        secTemp++;
-        if(secTemp > 59)
-            secTemp = 0;
-    }
+	secTemp = sec%60;
 }
 
 void setDay()
