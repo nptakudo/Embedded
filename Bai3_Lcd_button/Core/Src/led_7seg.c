@@ -22,7 +22,7 @@ void led7_init(){
 
 /**
   * @brief  Scan led 7 segment
-  * @param  None 
+  * @param  None
   * @note  	Call in 1ms interrupt
   * @retval None
   */
