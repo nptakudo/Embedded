@@ -241,11 +241,7 @@ void test_lcd(){
   lcd_DrawCircle(170, 90, RED, 15, 1);       
   lcd_ShowStr(10, 200, "buf", BLACK, WHITE, 16, 0);
   lcd_ShowStr(10, 220, "buf", BLACK, WHITE, 16, 0);
-
-                                   
-
-
-  
+  lcd_ShowStr(10, 240, "buf", BLACK, WHITE, 16, 0);
 }
 /* USER CODE END 4 */
 
