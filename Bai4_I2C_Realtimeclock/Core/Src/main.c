@@ -563,13 +563,13 @@ void modifyTimeFsm() {
 			setYear();
 			if(IsButtonSave()) {
 				ds3231_Write(ADDRESS_YEAR, yearTemp);
-				statusModifying = IDLE;
+				statusModifying = SET_HOUR;
 			}
 			break;
 
 
 		default:
-			statusModifying = IDLE;
+			statusModifying = SET_HOUR;
 			break;
 	}
 }

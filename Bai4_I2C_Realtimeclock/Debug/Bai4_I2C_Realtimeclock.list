@@ -5043,9 +5043,9 @@ void modifyTimeFsm() {
  8002568:	4619      	mov	r1, r3
  800256a:	2006      	movs	r0, #6
  800256c:	f7fe f864 	bl	8000638 <ds3231_Write>
-				statusModifying = IDLE;
+				statusModifying = SET_HOUR;
  8002570:	4b0b      	ldr	r3, [pc, #44]	; (80025a0 <modifyTimeFsm+0x160>)
- 8002572:	2207      	movs	r2, #7
+ 8002572:	2201      	movs	r2, #1
  8002574:	601a      	str	r2, [r3, #0]
 			}
 			break;
@@ -5053,9 +5053,9 @@ void modifyTimeFsm() {
 
 
 		default:
-			statusModifying = IDLE;
+			statusModifying = SET_HOUR;
  8002578:	4b09      	ldr	r3, [pc, #36]	; (80025a0 <modifyTimeFsm+0x160>)
- 800257a:	2207      	movs	r2, #7
+ 800257a:	2201      	movs	r2, #1
  800257c:	601a      	str	r2, [r3, #0]
 			break;
  800257e:	e00c      	b.n	800259a <modifyTimeFsm+0x15a>
