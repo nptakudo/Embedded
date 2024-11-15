@@ -2,7 +2,7 @@
 
 static TrafficMode currentMode = MODE_NORMAL;
 static TrafficState currentState = STATE_RED_GREEN;
-static TrafficTiming timing = {10, 7, 3}; // Default timings RGY
+static TrafficTiming timing = {5, 3, 2}; // Default timings RGY
 static uint32_t stateTimer = 0;
 static uint8_t blinkTimer = 0;
 static uint8_t showBlink = 0;
