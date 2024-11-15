@@ -10,7 +10,7 @@ static uint8_t showBlink = 0;
 void traffic_Init(void) {
     lcd_Clear(WHITE);
     lcd_StrCenter(0, 2, "Traffic Light Control", BLACK, WHITE, 16, 1);
-    traffic_DrawLights() ;
+    traffic_DrawLights();
 }
 
 void traffic_FSM(void) {
