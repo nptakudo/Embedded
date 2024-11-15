@@ -225,8 +225,10 @@ void test_lcd(){
 	lcd_Fill(0, 0, 240, 20, BLUE);
 	lcd_StrCenter(0, 2, "Traffic Light", RED, YELLOW, 16, 1);
 	// lcd_ShowStr(20, 30, "Test lcd screen", WHITE, RED, 24, 0);
-	lcd_DrawCircle(60, 120, GREEN, 40, 1);
-	lcd_DrawCircle(160, 120, BRED, 40, 0);
+	lcd_DrawCircle(40, 40, GREEN, 20, 1);
+	lcd_DrawCircle(40, 80, RED, 20, 1);  
+	lcd_DrawCircle(40, 120, YELLOW, 20, 1);
+	lcd_DrawCircle(160, 120, BRED, 20, 0);
 	// lcd_ShowPicture(80, 200, 90, 90, gImage_logo);
 }
 /* USER CODE END 4 */
