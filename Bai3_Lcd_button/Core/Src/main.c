@@ -35,7 +35,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -217,19 +216,36 @@ void test_7seg(){
 void test_button(){
 	for(int i = 0; i < 16; i++){
 		if(button_count[i] == 1){
-			lcd_ShowIntNum(140, 105, i, 2, BRED, WHITE, 32);
+			lcd_ShowIntNum(140, 105, i, 2, BRED, WHITE, 20);
 		}
 	}
 }
 void test_lcd(){
-	lcd_Fill(0, 0, 240, 20, BLUE);
-	lcd_StrCenter(0, 2, "Traffic Light", RED, YELLOW, 16, 1);
+	// lcd_Fill(0, 0, 240, 20, BLUE);
+	// lcd_StrCenter(0, 2, "Traffic Light", RED, YELLOW, 16, 1);
 	// lcd_ShowStr(20, 30, "Test lcd screen", WHITE, RED, 24, 0);
-	lcd_DrawCircle(40, 40, GREEN, 20, 1);
-	lcd_DrawCircle(40, 80, RED, 20, 1);  
-	lcd_DrawCircle(40, 120, YELLOW, 20, 1);
-	lcd_DrawCircle(160, 120, BRED, 20, 0);
+	// lcd_DrawCircle(40, 50, GREEN, 20, 1);
+	// lcd_DrawCircle(40, 100, RED, 20, 1);  
+	// lcd_DrawCircle(40, 150, YELLOW, 20, 1);
+	// lcd_DrawCircle(160, 120, BRED, , 0);
 	// lcd_ShowPicture(80, 200, 90, 90, gImage_logo);
+  lcd_Fill(20, 50, 220, 200, WHITE);
+    
+  // Draw traffic light frames
+  lcd_DrawRectangle(40, 60, 100, 180, BLACK);
+  lcd_DrawRectangle(140, 60, 200, 180, BLACK);
+  lcd_DrawCircle(70, 90, RED, 15, 1);
+  lcd_DrawCircle(70, 130, GREEN, 15, 1);
+  lcd_DrawCircle(70, 160, YELLOW, 15, 1);
+  lcd_DrawCircle(70, 90, RED, 15, 1);
+  lcd_DrawCircle(170, 90, RED, 15, 1);       
+  lcd_ShowStr(10, 200, "buf", BLACK, WHITE, 16, 0);
+  lcd_ShowStr(10, 220, "buf", BLACK, WHITE, 16, 0);
+
+                                   
+
+
+  
 }
 /* USER CODE END 4 */
 
