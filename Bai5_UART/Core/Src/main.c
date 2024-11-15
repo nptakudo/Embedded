@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2023 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under BSD 3-Clause license,
+ * the "License"; You may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at:
+ *                        opensource.org/licenses/BSD-3-Clause
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -44,6 +44,17 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define NORMAL          0
+#define MODIFY_TIME     7
+#define MODIFY_ALARM    8
+#define SET_HOUR        1
+#define SET_MIN         2
+#define SET_SEC         9
+#define SET_DAY         3
+#define SET_DATE        4
+#define SET_MONTH       5
+#define SET_YEAR        6
+#define IDLE			7
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -54,15 +65,42 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+int status = NORMAL;
+int statusModifying = SET_HOUR;
+int hourTemp = 9,minTemp = 1,secTemp = 0,dayTemp = 6,dateTemp = 15,monthTemp = 11,yearTemp = 24;
+int hourAlarm = 0, minAlarm = 0;
+int timeBlink = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void system_init();
-void test_LedDebug();
-void test_Uart();
+void DisplayTime();
+void UpdateTime();
+unsigned char IsButtonMode();
+unsigned char IsButtonUp();
+unsigned char IsButtonSave();
+void setHour();
+void setMin();
+void setSec();
+void setDay();
+void setDate();
+void setMonth();
+void setYear();
+void fsm();
+void modifyTimeFsm();
+void modifyAlarmFsm();
+void displayHour(int num, int isBlink);
+void displayMin(int num, int isBlink);
+void displaySec(int num, int isBlink);
+void displayDay(int num, int isBlink);
+void convertDay(int num);
+void displayDate(int num, int isBlink);
+void displayMonth(int num, int isBlink);
+void convertMonth(int num);
+void displayYear(int num, int isBlink);
+void displayScreen();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -104,22 +142,28 @@ int main(void)
   MX_I2C1_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  system_init();
+	system_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	lcd_Clear(BLACK);
+	UpdateTime();// update the curret time
+
+	while (1) {
+		while (!timer2_flag);
+		timer2_flag = 0;
+		ds3231_ReadTime();
+		button_Scan();
+        fsm();
+        displayScreen();
+        test_Uart();
+        test_receive();
+
     /* USER CODE END WHILE */
-	  while(!flag_timer2);
-	  flag_timer2 = 0;
-	  button_Scan();
-	  test_LedDebug();
-	  ds3231_ReadTime();
-	  test_Uart();
+
     /* USER CODE BEGIN 3 */
-  }
+	}
   /* USER CODE END 3 */
 }
 
@@ -168,38 +212,26 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void system_init(){
-	  HAL_GPIO_WritePin(OUTPUT_Y0_GPIO_Port, OUTPUT_Y0_Pin, 0);
-	  HAL_GPIO_WritePin(OUTPUT_Y1_GPIO_Port, OUTPUT_Y1_Pin, 0);
-	  HAL_GPIO_WritePin(DEBUG_LED_GPIO_Port, DEBUG_LED_Pin, 0);
-	  timer_init();
-	  led7_init();
-	  button_init();
-	  lcd_init();
-	  uart_init_rs232();
-	  setTimer2(50);
+void system_init() {
+	HAL_GPIO_WritePin(OUTPUT_Y0_GPIO_Port, OUTPUT_Y0_Pin, 0);
+	HAL_GPIO_WritePin(OUTPUT_Y1_GPIO_Port, OUTPUT_Y1_Pin, 0);
+	HAL_GPIO_WritePin(DEBUG_LED_GPIO_Port, DEBUG_LED_Pin, 0);
+
+	button_init ();
+	lcd_init();
+	ds3231_init();
+	uart_init_rs232();
+
+	timer_init();
+	setTimer2(50);
 }
 
-uint16_t count_led_debug = 0;
-
-void test_LedDebug(){
-	count_led_debug = (count_led_debug + 1)%20;
-	if(count_led_debug == 0){
-		HAL_GPIO_TogglePin(DEBUG_LED_GPIO_Port, DEBUG_LED_Pin);
-	}
-}
-
-void test_button(){
-	for(int i = 0; i < 16; i++){
-		if(button_count[i] == 1){
-			led7_SetDigit(i/10, 2, 0);
-			led7_SetDigit(i%10, 3, 0);
-		}
-	}
+void test_receive(){
+	lcd_ShowStr(20, 210, rcv, RED, BLACK, 24, 0);
 }
 
 void test_Uart(){
-	if(button_count[12] == 1){
+	if(button_count[11] == 1){
 		uart_Rs232SendNum(ds3231_hours);
 		uart_Rs232SendString(":");
 		uart_Rs232SendNum(ds3231_min);
@@ -208,6 +240,538 @@ void test_Uart(){
 		uart_Rs232SendString("\n");
 	}
 }
+
+void UpdateTime() {// update the current time
+	ds3231_Write(ADDRESS_YEAR, 24);
+	ds3231_Write(ADDRESS_MONTH, 11);
+	ds3231_Write(ADDRESS_DATE, 15);
+	ds3231_Write(ADDRESS_DAY, 6);
+	ds3231_Write(ADDRESS_HOUR, 9);
+	ds3231_Write(ADDRESS_MIN, 0);
+	ds3231_Write(ADDRESS_SEC, 0);
+}
+
+void displayHour(int num, int isBlink) {
+	if(isBlink){
+	    timeBlink = (timeBlink + 1)%10;
+	    if(timeBlink < 5) {
+	    	lcd_ShowStr(70, 100, "  ", GREEN, BLACK, 24, 0);
+	    }
+	    else {
+			lcd_ShowIntNum(70, 100, num/10, 1, GREEN, BLACK, 24);
+			lcd_ShowIntNum(83, 100, num%10, 1, GREEN, BLACK, 24);
+	    }
+	}
+	else {
+		lcd_ShowIntNum(70, 100, num/10, 1, GREEN, BLACK, 24);
+		lcd_ShowIntNum(83, 100, num%10, 1, GREEN, BLACK, 24);
+	}
+}
+
+void displayMin(int num, int isBlink) {
+	lcd_ShowChar(96, 100, ':', GREEN, BLACK, 24, 0);
+	if (isBlink) {
+	    timeBlink = (timeBlink + 1)%10;
+	    if(timeBlink < 5) {
+	    	lcd_ShowStr(110, 100, "  ", GREEN, BLACK, 24, 0);
+	    }
+	    else {
+	    	lcd_ShowIntNum(110, 100, num/10, 1, GREEN, BLACK, 24);
+	    	lcd_ShowIntNum(123, 100, num%10, 1, GREEN, BLACK, 24);
+	    }
+		//lcd_ShowIntNum (110 ,100 , num ,2, GREEN ,BLACK ,24) ;
+	}
+	else {
+    	lcd_ShowIntNum(110, 100, num/10, 1, GREEN, BLACK, 24);
+    	lcd_ShowIntNum(123, 100, num%10, 1, GREEN, BLACK, 24);
+	}
+
+}
+
+void displaySec(int num, int isBlink) {
+	lcd_ShowChar(136, 100, ':', GREEN, BLACK, 24, 0);
+	if (isBlink) {
+	    timeBlink = (timeBlink + 1)%10;
+	    if(timeBlink < 5) {
+	    	lcd_ShowStr(150, 100, "  ", GREEN, BLACK, 24, 0);
+	    }
+	    else {
+	    	lcd_ShowIntNum(150, 100, num/10, 1, GREEN, BLACK, 24);
+	    	lcd_ShowIntNum(163, 100, num%10, 1, GREEN, BLACK, 24);
+	    }
+	}
+	else {
+    	lcd_ShowIntNum(150, 100, num/10, 1, GREEN, BLACK, 24);
+    	lcd_ShowIntNum(163, 100, num%10, 1, GREEN, BLACK, 24);
+	}
+}
+
+void convertDay(int num) {
+	switch(num)
+	{
+		case 1:
+			lcd_ShowStr(20, 130, "SUN", YELLOW, BLACK, 24, 0);
+			break;
+		case 2:
+			lcd_ShowStr(20, 130, "MON", YELLOW, BLACK, 24, 0);
+			break;
+		case 3:
+			lcd_ShowStr(20, 130, "TUE", YELLOW, BLACK, 24, 0);
+			break;
+		case 4:
+			lcd_ShowStr(20, 130, "WED", YELLOW, BLACK, 24, 0);
+			break;
+		case 5:
+			lcd_ShowStr(20, 130, "THU", YELLOW, BLACK, 24, 0);
+			break;
+		case 6:
+			lcd_ShowStr(20, 130, "FRI", YELLOW, BLACK, 24, 0);
+			break;
+		case 7:
+			lcd_ShowStr(20, 130, "SAT", YELLOW, BLACK, 24, 0);
+			break;
+	}
+}
+void displayDay(int num, int isBlink) {
+	if (isBlink) {
+	    timeBlink = (timeBlink + 1)%10;
+	    if(timeBlink < 5) {
+	    	lcd_ShowStr(20, 130, "   ", GREEN, BLACK, 24, 0);
+	    }
+	    else {
+	    	convertDay(num);
+	    }
+	}
+	else convertDay(num);
+}
+
+void displayDate(int num, int isBlink) {
+	if (isBlink) {
+	    timeBlink = (timeBlink + 1)%10;
+	    if(timeBlink < 5) {
+	    	lcd_ShowStr(70, 130, "  ", GREEN, BLACK, 24, 0);
+	    }
+	    else {
+	    	lcd_ShowIntNum(70, 130, num, 2, YELLOW, BLACK, 24);
+	    }
+	}
+	else {
+    		lcd_ShowIntNum(70, 130, num, 2, YELLOW, BLACK, 24);
+	}
+}
+
+void convertMonth(int num) {
+    switch(num)
+    {
+        case 1:
+        	lcd_ShowStr(105, 130, "JAN", YELLOW, BLACK, 24, 0);
+            break;
+        case 2:
+        	lcd_ShowStr(105, 130, "FEB", YELLOW, BLACK, 24, 0);
+            break;
+        case 3:
+        	lcd_ShowStr(105, 130, "MAR", YELLOW, BLACK, 24, 0);
+            break;
+        case 4:
+        	lcd_ShowStr(105, 130, "APR", YELLOW, BLACK, 24, 0);
+            break;
+        case 5:
+        	lcd_ShowStr(105, 130, "MAY", YELLOW, BLACK, 24, 0);
+            break;
+        case 6:
+        	lcd_ShowStr(105, 130, "JUN", YELLOW, BLACK, 24, 0);
+            break;
+        case 7:
+        	lcd_ShowStr(105, 130, "JUL", YELLOW, BLACK, 24, 0);
+            break;
+        case 8:
+        	lcd_ShowStr(105, 130, "AUG", YELLOW, BLACK, 24, 0);
+            break;
+        case 9:
+        	lcd_ShowStr(105, 130, "SEP", YELLOW, BLACK, 24, 0);
+            break;
+        case 10:
+        	lcd_ShowStr(105, 130, "OCT", YELLOW, BLACK, 24, 0);
+            break;
+        case 11:
+        	lcd_ShowStr(105, 130, "NOV", YELLOW, BLACK, 24, 0);
+            break;
+        case 12:
+        	lcd_ShowStr(105, 130, "DEC", YELLOW, BLACK, 24, 0);
+            break;
+    }
+}
+void displayMonth(int num, int isBlink) {
+	if (isBlink) {
+	    timeBlink = (timeBlink + 1)%10;
+	    if(timeBlink < 5) {
+	    	lcd_ShowStr(105, 130, "   ", GREEN, BLACK, 24, 0);
+	    }
+	    else {
+	    	convertMonth(num);
+	    }
+	}
+	else {
+		convertMonth(num);
+	}
+}
+
+void displayYear(int num, int isBlink) {
+	if (isBlink) {
+	    timeBlink = (timeBlink + 1)%10;
+	    if(timeBlink < 5) {
+	    	lcd_ShowStr(150, 130, "    ", GREEN, BLACK, 24, 0);
+	    }
+	    else {
+	    	lcd_ShowIntNum(150, 130, 20, 2, YELLOW, BLACK, 24);
+	    	lcd_ShowIntNum(176, 130, num/10, 1, YELLOW, BLACK, 24);
+	    	lcd_ShowIntNum(189, 130, num%10, 1, YELLOW, BLACK, 24);
+	    }
+	}
+	else {
+    	lcd_ShowIntNum(150, 130, 20, 2, YELLOW, BLACK, 24);
+    	lcd_ShowIntNum(176, 130, num/10, 1, YELLOW, BLACK, 24);
+    	lcd_ShowIntNum(189, 130, num%10, 1, YELLOW, BLACK, 24);
+	}
+}
+
+void displayScreen()
+{
+	if (status == NORMAL) {
+		displayHour(ds3231_hours,0);
+		displayMin(ds3231_min,0);
+		displaySec(ds3231_sec,0);
+		displayDay(ds3231_day,0);
+		displayDate(ds3231_date,0);
+		displayMonth(ds3231_month,0);
+		displayYear(ds3231_year,0);
+	}
+	else {
+		if (statusModifying == SET_HOUR) {
+			displayHour(hourTemp,1);
+			displayMin(minTemp,0);
+			displaySec(secTemp,0);
+			displayDay(dayTemp,0);
+			displayDate(dateTemp,0);
+			displayMonth(monthTemp,0);
+			displayYear(yearTemp,0);
+		}
+
+		else if (statusModifying == SET_MIN) {
+			displayHour(hourTemp,0);
+			displayMin(minTemp,1);
+			displaySec(secTemp,0);
+			displayDay(dayTemp,0);
+			displayDate(dateTemp,0);
+			displayMonth(monthTemp,0);
+			displayYear(yearTemp,0);
+		}
+
+		else if (statusModifying == SET_SEC) {
+			displayHour(hourTemp,0);
+			displayMin(minTemp,0);
+			displaySec(secTemp,1);
+			displayDay(dayTemp,0);
+			displayDate(dateTemp,0);
+			displayMonth(monthTemp,0);
+			displayYear(yearTemp,0);
+		}
+
+		else if (statusModifying == SET_DAY) {
+			displayHour(hourTemp,0);
+			displayMin(minTemp,0);
+			displaySec(secTemp,0);
+			displayDay(dayTemp,1);
+			displayDate(dateTemp,0);
+			displayMonth(monthTemp,0);
+			displayYear(yearTemp,0);
+		}
+
+		else if (statusModifying == SET_DATE) {
+			displayHour(hourTemp,0);
+			displayMin(minTemp,0);
+			displaySec(secTemp,0);
+			displayDay(dayTemp,0);
+			displayDate(dateTemp,1);
+			displayMonth(monthTemp,0);
+			displayYear(yearTemp,0);
+		}
+
+		else if (statusModifying == SET_MONTH) {
+			displayHour(hourTemp,0);
+			displayMin(minTemp,0);
+			displaySec(secTemp,0);
+			displayDay(dayTemp,0);
+			displayDate(dateTemp,0);
+			displayMonth(monthTemp,1);
+			displayYear(yearTemp,0);
+		}
+
+		else if (statusModifying == SET_YEAR) {
+			displayHour(hourTemp,0);
+			displayMin(minTemp,0);
+			displaySec(secTemp,0);
+			displayDay(dayTemp,0);
+			displayDate(dateTemp,0);
+			displayMonth(monthTemp,0);
+			displayYear(yearTemp,1);
+		}
+	}
+	//displayState
+	if (status == NORMAL) {
+		lcd_ShowStr(20, 160, "1.NOR", YELLOW, BLACK, 24, 0);
+	}
+	else if (status == MODIFY_TIME) {
+		lcd_ShowStr(20, 160, "2.MOD", YELLOW, BLACK, 24, 0);
+	}
+	else {
+		lcd_ShowStr(20, 160, "3.ALR", YELLOW, BLACK, 24, 0);
+	}
+
+	if (ds3231_hours == hourAlarm && ds3231_min == minAlarm) {
+		lcd_ShowStr(20, 190, "Wake up honey", RED, BLACK, 24, 0);
+	}
+	else{
+		lcd_ShowStr(20, 190, "              ", BLACK, BLACK, 24, 0);
+	}
+
+}
+
+void modifyTimeFsm() {
+	switch(statusModifying){
+		case SET_HOUR:
+			lcd_ShowStr(20, 50, "Updating hour:", RED, BLACK, 24, 0);
+			setHour();
+			if(IsButtonSave()) {
+				ds3231_Write(ADDRESS_HOUR, hourTemp);
+				statusModifying = SET_MIN;
+				lcd_Clear(BLACK);
+			}
+			break;
+
+		case SET_MIN:
+			lcd_ShowStr(20, 50, "Updating minute:", RED, BLACK, 24, 0);
+			setMin();
+			if(IsButtonSave()) {
+				ds3231_Write(ADDRESS_MIN, minTemp);
+				statusModifying = SET_SEC;
+				lcd_Clear(BLACK);
+			}
+			break;
+
+		case SET_SEC:
+			lcd_ShowStr(20, 50, "Updating sec:", RED, BLACK, 24, 0);
+			setSec();
+			if(IsButtonSave()) {
+				ds3231_Write(ADDRESS_SEC, secTemp);
+				statusModifying = SET_DAY;
+				lcd_Clear(BLACK);
+			}
+			break;
+
+		case SET_DAY:
+			lcd_ShowStr(20, 50, "Updating day:", RED, BLACK, 24, 0);
+			setDay();
+			if(IsButtonSave()) {
+				ds3231_Write(ADDRESS_DAY, dayTemp);
+				statusModifying = SET_DATE;
+				lcd_Clear(BLACK);
+			}
+			break;
+
+		case SET_DATE:
+			lcd_ShowStr(20, 50, "Updating date:", RED, BLACK, 24, 0);
+			setDate();
+			if(IsButtonSave()) {
+				ds3231_Write(ADDRESS_DATE, dateTemp);
+				statusModifying = SET_MONTH;
+				lcd_Clear(BLACK);
+			}
+			break;
+
+		case SET_MONTH:
+			lcd_ShowStr(20, 50, "Updating month:", RED, BLACK, 24, 0);
+			setMonth();
+			if(IsButtonSave()) {
+				ds3231_Write(ADDRESS_MONTH, monthTemp);
+				statusModifying = SET_YEAR;
+				lcd_Clear(BLACK);
+			}
+			break;
+
+		case SET_YEAR:
+			lcd_ShowStr(20, 50, "Updating year:", RED, BLACK, 24, 0);
+			setYear();
+			if(IsButtonSave()) {
+				ds3231_Write(ADDRESS_YEAR, yearTemp);
+				statusModifying = SET_HOUR;
+				lcd_Clear(BLACK);
+			}
+			break;
+
+
+		default:
+			statusModifying = SET_HOUR;
+			lcd_Clear(BLACK);
+			break;
+	}
+}
+
+void modifyAlarmFsm(){
+	switch(statusModifying) {
+		case SET_HOUR:
+			setHour();
+			if(IsButtonSave()) {
+				hourAlarm = hourTemp;
+				statusModifying = SET_MIN;
+			}
+			break;
+
+		case SET_MIN:
+			setMin();
+			if(IsButtonSave()) {
+				minAlarm = minTemp;
+				statusModifying = SET_HOUR;
+			}
+			break;
+
+		default:
+			statusModifying = SET_HOUR;
+			break;
+	}
+}
+
+void fsm()
+{
+    switch(status)
+    {
+        case NORMAL:
+            if(IsButtonMode()) {
+                status = MODIFY_TIME;
+            	statusModifying = SET_HOUR;
+            }
+            break;
+        case MODIFY_TIME:
+            modifyTimeFsm();
+            if(IsButtonMode()) {
+                status = MODIFY_ALARM;
+                statusModifying = SET_HOUR;
+            }
+            break;
+        case MODIFY_ALARM:
+            modifyAlarmFsm();
+            if(IsButtonMode())
+                status = NORMAL;
+            break;
+        default:
+            status = NORMAL;
+            break;
+    }
+}
+//button change mode
+unsigned char IsButtonMode()
+{
+    if (button_count[0] == 1)
+        return 1;
+    else
+        return 0;
+}
+
+//increase parameter
+unsigned char IsButtonUp()
+{
+	if ((button_count[3] == 1) || (button_count[3] >= 40 && button_count[3] % 4 == 0))
+        return 1;
+    else
+        return 0;
+}
+
+//save parameter
+unsigned char IsButtonSave()
+{
+    if (button_count[12] == 1)
+        return 1;
+    else
+        return 0;
+}
+
+void setHour()
+{
+    if(IsButtonUp())
+    {
+        hourTemp++;
+        if(hourTemp > 23)
+            hourTemp = 0;
+    }
+}
+
+void setMin()
+{
+    if(IsButtonUp())
+    {
+        minTemp++;
+        if(minTemp > 59)
+            minTemp = 0;
+    }
+}
+
+void setSec()
+{
+
+    if(IsButtonUp())
+    {
+        secTemp++;
+        if(secTemp > 59)
+            secTemp = 0;
+    }
+}
+
+void setDay()
+{
+
+    if(IsButtonUp())
+    {
+        dayTemp++;
+        if(dayTemp > 7)
+            dayTemp = 1;
+    }
+}
+
+void setDate()
+{
+
+    if(IsButtonUp())
+    {
+        dateTemp++;
+        if(dateTemp > 31)
+            dateTemp = 1;
+    }
+}
+
+void setMonth()
+{
+
+    if(IsButtonUp())
+    {
+        monthTemp++;
+        if(monthTemp > 12)
+            monthTemp = 1;
+    }
+}
+
+void setYear()
+{
+
+    if(IsButtonUp())
+    {
+        yearTemp++;
+        if(yearTemp > 99)
+            yearTemp = 0;
+    }
+}
+
+
+
 /* USER CODE END 4 */
 
 /**
@@ -217,11 +781,10 @@ void test_Uart(){
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+	/* User can add his own implementation to report the HAL error return state */
+	__disable_irq();
+	while (1) {
+	}
   /* USER CODE END Error_Handler_Debug */
 }
 

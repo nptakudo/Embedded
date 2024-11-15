@@ -7,6 +7,8 @@
 #include "uart.h"
 
 uint8_t receive_buffer1 = 0;
+uint8_t index_buffer = 0;
+uint8_t rcv[100];
 uint8_t msg[100];
 
 void uart_init_rs232(){
@@ -60,9 +62,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 		// rs232 isr
 		// can be modified
 		HAL_UART_Transmit(&huart1, &receive_buffer1, 1, 10);
-
-
-		// turn on the receice interrupt
+		rcv[index_buffer++] = receive_buffer1;
+		if (index_buffer == 100) index_buffer = 0;
+		// turn on the receive interrupt
 		HAL_UART_Receive_IT(&huart1, &receive_buffer1, 1);
 	}
 }
