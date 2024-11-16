@@ -234,9 +234,10 @@ void system_init() {
 }
 
 void waiting(){
-	time_waiting = (time_waiting+1)%200;
+	time_waiting = (time_waiting+1)%60;
 	if (time_waiting==0){
 		count_waiting+=1;
+		uart_Rs232SendString("Request!!");
 	}
 	if (count_waiting == 4) not_response = 1;
 }
@@ -254,6 +255,7 @@ void cmd_parser_fsm(){
 					status=NORMAL;
 					not_response=0;
 					count_waiting=0;
+					lcd_Clear(BLACK);
 				}
 			}else{
 				not_response=0;
@@ -587,7 +589,7 @@ void modifyTimeFsm() {
 			cmd_parser_fsm();
 			if (cmd_parser_state == FINISH){
 				ds3231_Write(ADDRESS_HOUR, n);
-				hourTemp = n;
+				hourTemp = n%24;
 				statusModifying = SET_MIN;
 				cmd_parser_state = REQUEST;
 				lcd_Clear(BLACK);
@@ -599,7 +601,7 @@ void modifyTimeFsm() {
 			cmd_parser_fsm();
 			if (cmd_parser_state == FINISH){
 				ds3231_Write(ADDRESS_MIN, n);
-				minTemp = n;
+				minTemp = n%60;
 				statusModifying = SET_SEC;
 				cmd_parser_state = REQUEST;
 				lcd_Clear(BLACK);
@@ -611,7 +613,7 @@ void modifyTimeFsm() {
 			cmd_parser_fsm();
 			if (cmd_parser_state == FINISH){
 				ds3231_Write(ADDRESS_SEC, n);
-				secTemp = n;
+				secTemp = n%60;
 				statusModifying = SET_DAY;
 				cmd_parser_state = IDLE;
 				lcd_Clear(BLACK);

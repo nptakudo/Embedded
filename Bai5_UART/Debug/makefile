@@ -61,8 +61,8 @@ all: main-build
 main-build: Bai5_UART.elf secondary-outputs
 
 # Tool invocations
-Bai5_UART.elf: $(OBJS) $(USER_OBJS) D:\Embedded\Bai5_UART\STM32F407ZETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "Bai5_UART.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Embedded\Bai5_UART\STM32F407ZETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Bai5_UART.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Bai5_UART.elf: $(OBJS) $(USER_OBJS) D:\Embedded\Embedded\Bai5_UART\STM32F407ZETX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "Bai5_UART.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"D:\Embedded\Embedded\Bai5_UART\STM32F407ZETX_FLASH.ld" --specs=nosys.specs -Wl,-Map="Bai5_UART.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
