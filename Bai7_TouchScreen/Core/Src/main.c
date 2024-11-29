@@ -83,7 +83,7 @@ MovingLine line = {
     .x1 = 120,
     .y1 = 160,
     .x2 = 120,
-    .y2 = 200,  // Longer initial length
+    .y2 = 300,  // Much longer initial length
     .dx1 = 0,
     .dy1 = 0,
     .dx2 = 0,
@@ -382,8 +382,23 @@ void drawArrowButtons() {
 }
 
 void drawThickLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t width, uint16_t color) {
+    // Calculate the direction vector
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    
+    // Calculate the perpendicular vector (-dy, dx)
+    float len = sqrt(dx*dx + dy*dy);
+    if (len == 0) len = 1;  // Avoid division by zero
+    
+    float ux = -dy / len;
+    float uy = dx / len;
+    
+    // Draw multiple parallel lines
     for(int i = -width/2; i <= width/2; i++) {
-        lcd_DrawLine(x1+i, y1, x2+i, y2, color);
+        int offset_x = i * ux;
+        int offset_y = i * uy;
+        lcd_DrawLine(x1 + offset_x, y1 + offset_y, 
+                    x2 + offset_x, y2 + offset_y, color);
     }
 }
 
