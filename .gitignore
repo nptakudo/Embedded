@@ -62,6 +62,7 @@ dkms.conf
 *.slo
 
 # Precompiled Headers
+.metadata
 
 # Compiled Dynamic libraries
 .DS_Store
