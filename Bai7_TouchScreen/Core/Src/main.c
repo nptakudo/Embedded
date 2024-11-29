@@ -121,6 +121,29 @@ Button arrowRight = {100 + ARROW_WIDTH + ARROW_SPACING, 240 + ARROW_HEIGHT + ARR
 
 // Add movement speed
 const int16_t MOVE_SPEED = 5;
+
+#define MAX_SEGMENTS 20  // Maximum number of snake segments
+
+typedef struct {
+    uint16_t x;
+    uint16_t y;
+} Point;
+
+typedef struct {
+    Point segments[MAX_SEGMENTS];
+    int numSegments;
+    int16_t dx;
+    int16_t dy;
+    uint16_t color;
+} Snake;
+
+Snake snake = {
+    .segments = {{120, 160}},  // Start with head position
+    .numSegments = 1,
+    .dx = 0,
+    .dy = 0,
+    .color = GREEN
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -310,12 +333,12 @@ void touchProcess(){
 }
 
 void updateMovingLine() {
-    // Clear previous line
-    drawThickLine(line.x1, line.y1, line.x2, line.y2, SNAKE_WIDTH, BLACK);
-    
-    // Store old position of first point
-    uint16_t oldX = line.x1;
-    uint16_t oldY = line.y1;
+    // Clear previous snake segments
+    for(int i = 0; i < snake.numSegments-1; i++) {
+        drawThickLine(snake.segments[i].x, snake.segments[i].y, 
+                     snake.segments[i+1].x, snake.segments[i+1].y, 
+                     SNAKE_WIDTH, BLACK);
+    }
     
     // Check arrow button presses when screen is touched
     if(touch_IsTouched()) {
@@ -323,44 +346,50 @@ void updateMovingLine() {
         uint16_t touchY = touch_GetY();
         
         if(isButtonPressed(&arrowUp, touchX, touchY)) {
-            line.dy1 = -MOVE_SPEED;
-            line.dx1 = 0;
+            snake.dy = -MOVE_SPEED;
+            snake.dx = 0;
         }
         else if(isButtonPressed(&arrowDown, touchX, touchY)) {
-            line.dy1 = MOVE_SPEED;
-            line.dx1 = 0;
+            snake.dy = MOVE_SPEED;
+            snake.dx = 0;
         }
         else if(isButtonPressed(&arrowLeft, touchX, touchY)) {
-            line.dx1 = -MOVE_SPEED;
-            line.dy1 = 0;
+            snake.dx = -MOVE_SPEED;
+            snake.dy = 0;
         }
         else if(isButtonPressed(&arrowRight, touchX, touchY)) {
-            line.dx1 = MOVE_SPEED;
-            line.dy1 = 0;
+            snake.dx = MOVE_SPEED;
+            snake.dy = 0;
         }
     }
     
+    // Store old head position
+    Point oldHead = snake.segments[0];
+    
     // Update head position
-    line.x1 += line.dx1;
-    line.y1 += line.dy1;
-    
-    // Calculate vector from head to tail
-    float dx = line.x2 - line.x1;
-    float dy = line.y2 - line.y1;
-    float currentLength = sqrt(dx*dx + dy*dy);
-    
-    // Adjust tail position to maintain constant length
-    if(currentLength != 0) {
-        float scale = SNAKE_LENGTH / currentLength;
-        line.x2 = line.x1 + dx * scale;
-        line.y2 = line.y1 + dy * scale;
-    }
+    snake.segments[0].x += snake.dx;
+    snake.segments[0].y += snake.dy;
     
     // Boundary checking for head
-    if (line.x1 <= SNAKE_WIDTH/2) line.x1 = SNAKE_WIDTH/2;
-    if (line.x1 >= lcddev.width - SNAKE_WIDTH/2) line.x1 = lcddev.width - SNAKE_WIDTH/2;
-    if (line.y1 <= 60 + SNAKE_WIDTH/2) line.y1 = 60 + SNAKE_WIDTH/2;
-    if (line.y1 >= lcddev.height - SNAKE_WIDTH/2) line.y1 = lcddev.height - SNAKE_WIDTH/2;
+    if (snake.segments[0].x <= SNAKE_WIDTH/2) snake.segments[0].x = SNAKE_WIDTH/2;
+    if (snake.segments[0].x >= lcddev.width - SNAKE_WIDTH/2) snake.segments[0].x = lcddev.width - SNAKE_WIDTH/2;
+    if (snake.segments[0].y <= 60 + SNAKE_WIDTH/2) snake.segments[0].y = 60 + SNAKE_WIDTH/2;
+    if (snake.segments[0].y >= lcddev.height - SNAKE_WIDTH/2) snake.segments[0].y = lcddev.height - SNAKE_WIDTH/2;
+    
+    // Add new segment if moving
+    if((snake.dx != 0 || snake.dy != 0) && snake.numSegments < MAX_SEGMENTS) {
+        if(snake.numSegments == 1 || 
+           (abs(snake.segments[snake.numSegments-1].x - oldHead.x) > SNAKE_WIDTH ||
+            abs(snake.segments[snake.numSegments-1].y - oldHead.y) > SNAKE_WIDTH)) {
+            snake.segments[snake.numSegments] = oldHead;
+            snake.numSegments++;
+        }
+    }
+    
+    // Remove last segment if snake is too long
+    if(snake.numSegments > SNAKE_LENGTH/SNAKE_WIDTH) {
+        snake.numSegments--;
+    }
     
     // Create new dot every 3 seconds
     uint32_t currentTime = HAL_GetTick();
@@ -369,8 +398,12 @@ void updateMovingLine() {
         lastDotTime = currentTime;
     }
     
-    // Draw new line
-    drawThickLine(line.x1, line.y1, line.x2, line.y2, SNAKE_WIDTH, line.color);
+    // Draw new snake segments
+    for(int i = 0; i < snake.numSegments-1; i++) {
+        drawThickLine(snake.segments[i].x, snake.segments[i].y,
+                     snake.segments[i+1].x, snake.segments[i+1].y,
+                     SNAKE_WIDTH, snake.color);
+    }
 }
 
 void drawArrowButton(Button *btn, const char *label, uint16_t color) {
