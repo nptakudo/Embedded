@@ -11,6 +11,7 @@
 *.obj
 *.elf
 *.list
+*.cyclo
 # Linker output
 *.ilk
 *.map
@@ -40,7 +41,10 @@
 *.x86_64
 *.hex
 
-Debug/
+#every folder named Debug   
+
+Debug
+
 # Debug files
 *.dSYM/
 *.su
