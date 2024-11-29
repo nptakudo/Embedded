@@ -77,16 +77,36 @@ int draw_Status = INIT;
 
 // Initialize the moving line
 MovingLine line = {
-    .x1 = 20,
-    .y1 = 100,
-    .x2 = 100,
+    .x1 = 120,
+    .y1 = 160,
+    .x2 = 120,
     .y2 = 180,
-    .dx1 = 2,
-    .dy1 = 3,
-    .dx2 = -3,
-    .dy2 = -2,
+    .dx1 = 0,
+    .dy1 = 0,
+    .dx2 = 0,
+    .dy2 = 0,
     .color = RED
 };
+
+#define ARROW_WIDTH 40
+#define ARROW_HEIGHT 40
+#define ARROW_SPACING 10
+
+typedef struct {
+    uint16_t x;
+    uint16_t y;
+    uint16_t width;
+    uint16_t height;
+} Button;
+
+// Define arrow buttons
+Button arrowUp = {100, 240, ARROW_WIDTH, ARROW_HEIGHT};
+Button arrowDown = {100, 240 + ARROW_HEIGHT + ARROW_SPACING, ARROW_WIDTH, ARROW_HEIGHT};
+Button arrowLeft = {100 - ARROW_WIDTH - ARROW_SPACING, 240 + ARROW_HEIGHT + ARROW_SPACING/2, ARROW_WIDTH, ARROW_HEIGHT};
+Button arrowRight = {100 + ARROW_WIDTH + ARROW_SPACING, 240 + ARROW_HEIGHT + ARROW_SPACING/2, ARROW_WIDTH, ARROW_HEIGHT};
+
+// Add movement speed
+const int16_t MOVE_SPEED = 5;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,6 +116,10 @@ void system_init();
 void test_LedDebug();
 void touchProcess();
 uint8_t isButtonClear();
+void drawArrowButton(Button *btn, const char *label, uint16_t color);
+uint8_t isButtonPressed(Button *btn, uint16_t x, uint16_t y);
+void drawArrowButtons(void);
+void updateMovingLine(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -244,6 +268,7 @@ void touchProcess(){
                 // display blue button
 			lcd_Fill(60, 10, 180, 60, GBLUE);
 			lcd_ShowStr(90, 20, "CLEAR", RED, BLACK, 24, 1);
+			drawArrowButtons();
 			draw_Status = DRAW;
 			break;
 		case DRAW:
@@ -254,6 +279,7 @@ void touchProcess(){
                     // display green button
 				lcd_Fill(60, 10, 180, 60, GREEN);
 				lcd_ShowStr(90, 20, "CLEAR", RED, BLACK, 24, 1);
+				drawArrowButtons();
 			}
 			break;
 		case CLEAR:
@@ -268,30 +294,66 @@ void updateMovingLine() {
     // Clear previous line
     lcd_DrawLine(line.x1, line.y1, line.x2, line.y2, BLACK);
     
+    // Store old position of first point
+    uint16_t oldX = line.x1;
+    uint16_t oldY = line.y1;
+    
+    // Check arrow button presses when screen is touched
+    if(touch_IsTouched()) {
+        uint16_t touchX = touch_GetX();
+        uint16_t touchY = touch_GetY();
+        
+        if(isButtonPressed(&arrowUp, touchX, touchY)) {
+            line.dy1 = -MOVE_SPEED;
+            line.dx1 = 0;
+        }
+        else if(isButtonPressed(&arrowDown, touchX, touchY)) {
+            line.dy1 = MOVE_SPEED;
+            line.dx1 = 0;
+        }
+        else if(isButtonPressed(&arrowLeft, touchX, touchY)) {
+            line.dx1 = -MOVE_SPEED;
+            line.dy1 = 0;
+        }
+        else if(isButtonPressed(&arrowRight, touchX, touchY)) {
+            line.dx1 = MOVE_SPEED;
+            line.dy1 = 0;
+        }
+    }
+    
     // Update positions
     line.x1 += line.dx1;
     line.y1 += line.dy1;
-    line.x2 += line.dx2;
-    line.y2 += line.dy2;
     
-    // Bounce off screen edges for first point
-    if (line.x1 <= 0 || line.x1 >= lcddev.width) {
-        line.dx1 = -line.dx1;
-    }
-    if (line.y1 <= 60 || line.y1 >= lcddev.height) {  // Start at y=60 to avoid button area
-        line.dy1 = -line.dy1;
-    }
+    // Make second point follow first point (snake-like behavior)
+    line.x2 = oldX;
+    line.y2 = oldY;
     
-    // Bounce off screen edges for second point
-    if (line.x2 <= 0 || line.x2 >= lcddev.width) {
-        line.dx2 = -line.dx2;
-    }
-    if (line.y2 <= 60 || line.y2 >= lcddev.height) {  // Start at y=60 to avoid button area
-        line.dy2 = -line.dy2;
-    }
+    // Boundary checking for first point
+    if (line.x1 <= 0) line.x1 = 0;
+    if (line.x1 >= lcddev.width) line.x1 = lcddev.width;
+    if (line.y1 <= 60) line.y1 = 60;  // Avoid button area
+    if (line.y1 >= lcddev.height) line.y1 = lcddev.height;
     
     // Draw new line
     lcd_DrawLine(line.x1, line.y1, line.x2, line.y2, line.color);
+}
+
+void drawArrowButton(Button *btn, const char *label, uint16_t color) {
+    lcd_DrawRectangle(btn->x, btn->y, btn->x + btn->width, btn->y + btn->height, color);
+    lcd_ShowStr(btn->x + 5, btn->y + 10, (char*)label, BLACK, color, 16, 1);
+}
+
+uint8_t isButtonPressed(Button *btn, uint16_t x, uint16_t y) {
+    return (x >= btn->x && x <= (btn->x + btn->width) &&
+            y >= btn->y && y <= (btn->y + btn->height));
+}
+
+void drawArrowButtons() {
+    drawArrowButton(&arrowUp, "^", CYAN);
+    drawArrowButton(&arrowDown, "v", CYAN);
+    drawArrowButton(&arrowLeft, "<", CYAN);
+    drawArrowButton(&arrowRight, ">", CYAN);
 }
 /* USER CODE END 4 */
 
