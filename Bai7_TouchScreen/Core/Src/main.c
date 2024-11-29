@@ -29,6 +29,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdbool.h>
+#include <math.h>
 #include "software_timer.h"
 #include "led_7seg.h"
 #include "button.h"
@@ -112,23 +114,11 @@ typedef struct {
     uint16_t width;
     uint16_t height;
 } Button;
-
-// Define arrow buttons
-Button arrowUp = {100, 240, ARROW_WIDTH, ARROW_HEIGHT};
-Button arrowDown = {100, 240 + ARROW_HEIGHT + ARROW_SPACING, ARROW_WIDTH, ARROW_HEIGHT};
-Button arrowLeft = {100 - ARROW_WIDTH - ARROW_SPACING, 240 + ARROW_HEIGHT + ARROW_SPACING/2, ARROW_WIDTH, ARROW_HEIGHT};
-Button arrowRight = {100 + ARROW_WIDTH + ARROW_SPACING, 240 + ARROW_HEIGHT + ARROW_SPACING/2, ARROW_WIDTH, ARROW_HEIGHT};
-
-// Add movement speed
-const int16_t MOVE_SPEED = 5;
-
-#define MAX_SEGMENTS 20  // Maximum number of snake segments
-
+#define MAX_SEGMENTS 50  // Increased for longer snake
 typedef struct {
     uint16_t x;
     uint16_t y;
 } Point;
-
 typedef struct {
     Point segments[MAX_SEGMENTS];
     int numSegments;
@@ -144,6 +134,18 @@ Snake snake = {
     .dy = 0,
     .color = GREEN
 };
+
+// Define arrow buttons
+Button arrowUp = {100, 240, ARROW_WIDTH, ARROW_HEIGHT};
+Button arrowDown = {100, 240 + ARROW_HEIGHT + ARROW_SPACING, ARROW_WIDTH, ARROW_HEIGHT};
+Button arrowLeft = {100 - ARROW_WIDTH - ARROW_SPACING, 240 + ARROW_HEIGHT + ARROW_SPACING/2, ARROW_WIDTH, ARROW_HEIGHT};
+Button arrowRight = {100 + ARROW_WIDTH + ARROW_SPACING, 240 + ARROW_HEIGHT + ARROW_SPACING/2, ARROW_WIDTH, ARROW_HEIGHT};
+
+// Add movement speed
+const int16_t MOVE_SPEED = 5;
+
+
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -160,6 +162,8 @@ void drawThickLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t 
 void createRandomDot(void);
 void initFoodDots(void);
 void updateMovingLine(void);
+bool checkCollision(Point newHead);
+void checkFoodCollision(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -340,63 +344,48 @@ void updateMovingLine() {
                      SNAKE_WIDTH, BLACK);
     }
     
-    // Check arrow button presses when screen is touched
+    // Handle controls
     if(touch_IsTouched()) {
         uint16_t touchX = touch_GetX();
         uint16_t touchY = touch_GetY();
         
-        if(isButtonPressed(&arrowUp, touchX, touchY)) {
+        if(isButtonPressed(&arrowUp, touchX, touchY) && snake.dy >= 0) {
             snake.dy = -MOVE_SPEED;
             snake.dx = 0;
         }
-        else if(isButtonPressed(&arrowDown, touchX, touchY)) {
+        else if(isButtonPressed(&arrowDown, touchX, touchY) && snake.dy <= 0) {
             snake.dy = MOVE_SPEED;
             snake.dx = 0;
         }
-        else if(isButtonPressed(&arrowLeft, touchX, touchY)) {
+        else if(isButtonPressed(&arrowLeft, touchX, touchY) && snake.dx >= 0) {
             snake.dx = -MOVE_SPEED;
             snake.dy = 0;
         }
-        else if(isButtonPressed(&arrowRight, touchX, touchY)) {
+        else if(isButtonPressed(&arrowRight, touchX, touchY) && snake.dx <= 0) {
             snake.dx = MOVE_SPEED;
             snake.dy = 0;
         }
     }
     
-    // Store old head position
-    Point oldHead = snake.segments[0];
+    // Calculate new head position
+    Point newHead = {
+        .x = snake.segments[0].x + snake.dx,
+        .y = snake.segments[0].y + snake.dy
+    };
     
-    // Update head position
-    snake.segments[0].x += snake.dx;
-    snake.segments[0].y += snake.dy;
+    // Boundary checking
+    if (newHead.x <= SNAKE_WIDTH/2) newHead.x = SNAKE_WIDTH/2;
+    if (newHead.x >= lcddev.width - SNAKE_WIDTH/2) newHead.x = lcddev.width - SNAKE_WIDTH/2;
+    if (newHead.y <= 60 + SNAKE_WIDTH/2) newHead.y = 60 + SNAKE_WIDTH/2;
+    if (newHead.y >= lcddev.height - SNAKE_WIDTH/2) newHead.y = lcddev.height - SNAKE_WIDTH/2;
     
-    // Boundary checking for head
-    if (snake.segments[0].x <= SNAKE_WIDTH/2) snake.segments[0].x = SNAKE_WIDTH/2;
-    if (snake.segments[0].x >= lcddev.width - SNAKE_WIDTH/2) snake.segments[0].x = lcddev.width - SNAKE_WIDTH/2;
-    if (snake.segments[0].y <= 60 + SNAKE_WIDTH/2) snake.segments[0].y = 60 + SNAKE_WIDTH/2;
-    if (snake.segments[0].y >= lcddev.height - SNAKE_WIDTH/2) snake.segments[0].y = lcddev.height - SNAKE_WIDTH/2;
-    
-    // Add new segment if moving
-    if((snake.dx != 0 || snake.dy != 0) && snake.numSegments < MAX_SEGMENTS) {
-        if(snake.numSegments == 1 || 
-           (abs(snake.segments[snake.numSegments-1].x - oldHead.x) > SNAKE_WIDTH ||
-            abs(snake.segments[snake.numSegments-1].y - oldHead.y) > SNAKE_WIDTH)) {
-            snake.segments[snake.numSegments] = oldHead;
-            snake.numSegments++;
-        }
+    // Move body segments
+    for(int i = snake.numSegments-1; i > 0; i--) {
+        snake.segments[i] = snake.segments[i-1];
     }
     
-    // Remove last segment if snake is too long
-    if(snake.numSegments > SNAKE_LENGTH/SNAKE_WIDTH) {
-        snake.numSegments--;
-    }
-    
-    // Create new dot every 3 seconds
-    uint32_t currentTime = HAL_GetTick();
-    if(currentTime - lastDotTime >= 3000) {
-        createRandomDot();
-        lastDotTime = currentTime;
-    }
+    // Update head
+    snake.segments[0] = newHead;
     
     // Draw new snake segments
     for(int i = 0; i < snake.numSegments-1; i++) {
@@ -422,7 +411,55 @@ void drawArrowButtons() {
     drawArrowButton(&arrowLeft, "<", GREEN);
     drawArrowButton(&arrowRight, ">", GREEN);
 }
-
+bool checkCollision(Point newHead) {
+    // Check wall collision
+    if (newHead.x <= SNAKE_WIDTH/2 || 
+        newHead.x >= lcddev.width - SNAKE_WIDTH/2 ||
+        newHead.y <= 60 + SNAKE_WIDTH/2 || 
+        newHead.y >= lcddev.height - SNAKE_WIDTH/2) {
+        return true;
+    }
+    
+    // Check self collision (skip head)
+    for(int i = 1; i < snake.numSegments; i++) {
+        if(abs(newHead.x - snake.segments[i].x) < SNAKE_WIDTH &&
+           abs(newHead.y - snake.segments[i].y) < SNAKE_WIDTH) {
+            return true;
+        }
+    }
+    return false;
+}
+void checkFoodCollision() {
+    Point head = snake.segments[0];
+    
+    for(int i = 0; i < MAX_DOTS; i++) {
+        if(foodDots[i].active) {
+            if(abs(head.x - foodDots[i].x) < SNAKE_WIDTH &&
+               abs(head.y - foodDots[i].y) < SNAKE_WIDTH) {
+                // Increase score
+                // snake.score += 10;
+                
+                // Deactivate eaten food
+                foodDots[i].active = 0;
+                
+                // Clear food dot from screen
+                for(int w = -SNAKE_WIDTH/2; w <= SNAKE_WIDTH/2; w++) {
+                    for(int h = -SNAKE_WIDTH/2; h <= SNAKE_WIDTH/2; h++) {
+                        lcd_DrawPoint(foodDots[i].x + w, foodDots[i].y + h, BLACK);
+                    }
+                }
+                
+                // Don't remove last segment (allows growth)
+                return;
+            }
+        }
+    }
+    
+    // Remove last segment if no food was eaten
+    if(snake.numSegments > 1) {
+        snake.numSegments--;
+    }
+}
 void drawThickLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t width, uint16_t color) {
     // Calculate the direction vector
     int dx = x2 - x1;
