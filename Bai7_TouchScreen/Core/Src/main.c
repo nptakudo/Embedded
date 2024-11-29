@@ -75,18 +75,31 @@ typedef struct {
 
 int draw_Status = INIT;
 
-// Initialize the moving line
+// Initialize the moving line with multiple segments
+#define SNAKE_WIDTH 10  // Width of the snake
+#define MAX_DOTS 5     // Maximum number of food dots
+
 MovingLine line = {
     .x1 = 120,
     .y1 = 160,
     .x2 = 120,
-    .y2 = 180,
+    .y2 = 200,  // Longer initial length
     .dx1 = 0,
     .dy1 = 0,
     .dx2 = 0,
     .dy2 = 0,
-    .color = RED
+    .color = GREEN
 };
+
+// Add these new structures for food dots
+typedef struct {
+    uint16_t x;
+    uint16_t y;
+    uint8_t active;
+} FoodDot;
+
+FoodDot foodDots[MAX_DOTS];
+uint32_t lastDotTime = 0;
 
 #define ARROW_WIDTH 40
 #define ARROW_HEIGHT 40
@@ -118,7 +131,10 @@ void touchProcess();
 uint8_t isButtonClear();
 void drawArrowButton(Button *btn, const char *label, uint16_t color);
 uint8_t isButtonPressed(Button *btn, uint16_t x, uint16_t y);
-void drawArrowButtons(void);
+void drawArrowButtons(void);  
+void drawThickLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t width, uint16_t color);
+void createRandomDot(void);
+void initFoodDots(void);
 void updateMovingLine(void);
 /* USER CODE END PFP */
 
@@ -176,10 +192,10 @@ int main(void)
 	  //scan touch screen
 	  touch_Scan();
 	  //check if touch screen is touched
-	  if(touch_IsTouched() && draw_Status == DRAW){
-            //draw a point at the touch position
-		  lcd_DrawPoint(touch_GetX(), touch_GetY(), RED);
-	  }
+	  // if(touch_IsTouched() && draw_Status == DRAW){
+    //         //draw a point at the touch position
+		//   lcd_DrawPoint(touch_GetX(), touch_GetY(), RED);
+	  // }
 	  // 50ms task
 	  if(flag_timer2 == 1){
 		  flag_timer2 = 0;
@@ -246,6 +262,8 @@ void system_init(){
 	  lcd_init();
 	  touch_init();
 	  setTimer2(50);
+	  initFoodDots();
+	  lastDotTime = HAL_GetTick();
 }
 
 uint8_t count_led_debug = 0;
@@ -292,7 +310,7 @@ void touchProcess(){
 
 void updateMovingLine() {
     // Clear previous line
-    lcd_DrawLine(line.x1, line.y1, line.x2, line.y2, BLACK);
+    drawThickLine(line.x1, line.y1, line.x2, line.y2, SNAKE_WIDTH, BLACK);
     
     // Store old position of first point
     uint16_t oldX = line.x1;
@@ -330,13 +348,20 @@ void updateMovingLine() {
     line.y2 = oldY;
     
     // Boundary checking for first point
-    if (line.x1 <= 0) line.x1 = 0;
-    if (line.x1 >= lcddev.width) line.x1 = lcddev.width;
-    if (line.y1 <= 60) line.y1 = 60;  // Avoid button area
-    if (line.y1 >= lcddev.height) line.y1 = lcddev.height;
+    if (line.x1 <= SNAKE_WIDTH/2) line.x1 = SNAKE_WIDTH/2;
+    if (line.x1 >= lcddev.width - SNAKE_WIDTH/2) line.x1 = lcddev.width - SNAKE_WIDTH/2;
+    if (line.y1 <= 60 + SNAKE_WIDTH/2) line.y1 = 60 + SNAKE_WIDTH/2;
+    if (line.y1 >= lcddev.height - SNAKE_WIDTH/2) line.y1 = lcddev.height - SNAKE_WIDTH/2;
+    
+    // Create new dot every 3 seconds
+    uint32_t currentTime = HAL_GetTick();
+    if(currentTime - lastDotTime >= 3000) {  // 3000ms = 3 seconds
+        createRandomDot();
+        lastDotTime = currentTime;
+    }
     
     // Draw new line
-    lcd_DrawLine(line.x1, line.y1, line.x2, line.y2, line.color);
+    drawThickLine(line.x1, line.y1, line.x2, line.y2, SNAKE_WIDTH, line.color);
 }
 
 void drawArrowButton(Button *btn, const char *label, uint16_t color) {
@@ -350,10 +375,39 @@ uint8_t isButtonPressed(Button *btn, uint16_t x, uint16_t y) {
 }
 
 void drawArrowButtons() {
-    drawArrowButton(&arrowUp, "^", CYAN);
-    drawArrowButton(&arrowDown, "v", CYAN);
-    drawArrowButton(&arrowLeft, "<", CYAN);
-    drawArrowButton(&arrowRight, ">", CYAN);
+    drawArrowButton(&arrowUp, "^", GREEN);
+    drawArrowButton(&arrowDown, "v", GREEN);
+    drawArrowButton(&arrowLeft, "<", GREEN);
+    drawArrowButton(&arrowRight, ">", GREEN);
+}
+
+void drawThickLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t width, uint16_t color) {
+    for(int i = -width/2; i <= width/2; i++) {
+        lcd_DrawLine(x1+i, y1, x2+i, y2, color);
+    }
+}
+
+void createRandomDot() {
+    for(int i = 0; i < MAX_DOTS; i++) {
+        if(!foodDots[i].active) {
+            foodDots[i].x = 20 + (rand() % (lcddev.width - 40));  // Keep away from edges
+            foodDots[i].y = 80 + (rand() % (lcddev.height - 160)); // Keep away from buttons
+            foodDots[i].active = 1;
+            // Draw the dot
+            for(int w = -SNAKE_WIDTH/2; w <= SNAKE_WIDTH/2; w++) {
+                for(int h = -SNAKE_WIDTH/2; h <= SNAKE_WIDTH/2; h++) {
+                    lcd_DrawPoint(foodDots[i].x + w, foodDots[i].y + h, RED);
+                }
+            }
+            break;
+        }
+    }
+}
+
+void initFoodDots() {
+    for(int i = 0; i < MAX_DOTS; i++) {
+        foodDots[i].active = 0;
+    }
 }
 /* USER CODE END 4 */
 
