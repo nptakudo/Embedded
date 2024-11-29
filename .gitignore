@@ -64,7 +64,7 @@ dkms.conf
 # Precompiled Headers
 
 # Compiled Dynamic libraries
-
+.DS_Store
 # Fortran module files
 *.mod
 *.smod
