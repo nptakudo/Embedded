@@ -76,10 +76,10 @@ void game_state_machine() {
 
 void show_start_game_GUI() {
     // Clear screen and display "START GAME" button
-    lcd_Clear(WHITE);
-//    lcd_StrCenter(0, 145, "START", BLACK, BLACK, 24, 1);
-    lcd_ShowStr(90, 148, "START", BLACK, BLACK, 24, 1);
-    lcd_DrawRectangle(80, 140, 160, 180, BLACK); // Draw a button around the text
+    lcd_Clear(BLACK);
+//    lcd_StrCenter(0, 145, "START", WHITE, WHITE, 24, 1);
+    lcd_ShowStr(90, 148, "START", WHITE, WHITE, 24, 1);
+    lcd_DrawRectangle(80, 140, 160, 180, WHITE); // Draw a button around the text
 }
 
 // Detect if "START GAME" button is pressed
@@ -111,26 +111,26 @@ void show_in_game_static_GUI() {
 }
 
 void show_navigation_buttons() {
-    lcd_DrawRectangle(100, 240, 140, 265, BLACK); // UP
-    lcd_ShowStr(113, 245, "UP", BLACK, BLACK, 16, 1);
+    lcd_DrawRectangle(100, 240, 140, 265, WHITE); // UP
+    lcd_ShowStr(113, 245, "UP", WHITE, WHITE, 16, 1);
 
-    lcd_DrawRectangle(100, 290, 140, 315, BLACK); // DOWN
-    lcd_ShowStr(104, 295, "DOWN", BLACK, BLACK, 16, 1);
+    lcd_DrawRectangle(100, 290, 140, 315, WHITE); // DOWN
+    lcd_ShowStr(104, 295, "DOWN", WHITE, WHITE, 16, 1);
 
-    lcd_DrawRectangle(60, 265, 100, 290, BLACK); // LEFT
-    lcd_ShowStr(66, 270, "LEFT", BLACK, BLACK, 16, 1);
+    lcd_DrawRectangle(60, 265, 100, 290, WHITE); // LEFT
+    lcd_ShowStr(66, 270, "LEFT", WHITE, WHITE, 16, 1);
 
-    lcd_DrawRectangle(140, 265, 180, 290, BLACK); // RIGHT
-    lcd_ShowStr(142, 270, "RIGHT", BLACK, BLACK, 16, 1);
+    lcd_DrawRectangle(140, 265, 180, 290, WHITE); // RIGHT
+    lcd_ShowStr(142, 270, "RIGHT", WHITE, WHITE, 16, 1);
 }
 
 void show_border() {
-    lcd_DrawRectangle(0, 0, GAME_AREA, GAME_AREA, BLACK); // Draw border
+    lcd_DrawRectangle(0, 0, GAME_AREA, GAME_AREA, WHITE); // Draw border
 }
 
 // IN_GAME Dynamic GUI
 void show_in_game_dynamic_GUI() {
-    lcd_Fill(0, 0, GAME_AREA, GAME_AREA, WHITE); // Clear game screen
+    lcd_Fill(0, 0, GAME_AREA, GAME_AREA, BLACK); // Clear game screen
     draw_snake();
     draw_apple();
 }
@@ -230,13 +230,13 @@ void in_game_logic() {
 
 void show_game_over_GUI() {
     // Clear screen and display "GAME OVER" and "PLAY AGAIN" buttons
-    lcd_Clear(WHITE);
-//    lcd_StrCenter(120, 160, "GAME OVER", WHITE, BLACK, 24, 0);
-//    lcd_StrCenter(120, 200, "PLAY AGAIN", WHITE, BLACK, 24, 0);
-//    lcd_DrawRectangle(100, 190, 180, 220, BLACK); // Draw a button around the text
+    lcd_Clear(BLACK);
+//    lcd_StrCenter(120, 160, "GAME OVER", BLACK, WHITE, 24, 0);
+//    lcd_StrCenter(120, 200, "PLAY AGAIN", BLACK, WHITE, 24, 0);
+//    lcd_DrawRectangle(100, 190, 180, 220, WHITE); // Draw a button around the text
 
-    lcd_ShowStr(60, 148, "PLAY AGAIN", BLACK, BLACK, 24, 1);
-	lcd_DrawRectangle(50, 140, 190, 180, BLACK); // Draw a button around the text
+    lcd_ShowStr(60, 148, "PLAY AGAIN", WHITE, WHITE, 24, 1);
+	lcd_DrawRectangle(50, 140, 190, 180, WHITE); // Draw a button around the text
 }
 
 // Detect if "PLAY AGAIN" button is pressed
