@@ -74,7 +74,7 @@ int statusModifying = SET_HOUR;
 int hourTemp = 9,minTemp = 1,secTemp = 0,dayTemp = 6,dateTemp = 15,monthTemp = 11,yearTemp = 24;
 int hourAlarm = 0, minAlarm = 0;
 int timeBlink = 0;
-int time_waiting=0, count_waiting=0, not_response=0;
+int time_waiting=0, count_waiting=0;
 int n = 0;
 int cmd_parser_state = IDLE;
 /* USER CODE END PV */
@@ -233,15 +233,6 @@ void system_init() {
 	setTimer2(50);
 }
 
-void waiting(){
-	time_waiting = (time_waiting+1)%60;
-	if (time_waiting==0){
-		count_waiting+=1;
-		uart_Rs232SendString("Request!!");
-	}
-	if (count_waiting == 4) not_response = 1;
-}
-
 void cmd_parser_fsm(){
 	switch (cmd_parser_state){
 		case REQUEST:
@@ -249,19 +240,7 @@ void cmd_parser_fsm(){
 			cmd_parser_state = WAITING_RESPONSE;
 			break;
 		case WAITING_RESPONSE:
-			if (index_buffer<=0){
-				waiting();
-				if (not_response){
-					status=NORMAL;
-					not_response=0;
-					count_waiting=0;
-					lcd_Clear(BLACK);
-				}
-			}else{
-				not_response=0;
-				count_waiting=0;
-				cmd_parser_state=RECEIVE;
-			}
+
 		case RECEIVE:
 			if (flag){
 				sscanf((const char *)rcv, "%d", &n);
@@ -589,7 +568,7 @@ void modifyTimeFsm() {
 			cmd_parser_fsm();
 			if (cmd_parser_state == FINISH){
 				ds3231_Write(ADDRESS_HOUR, n);
-				hourTemp = n%24;
+				hourTemp = n;
 				statusModifying = SET_MIN;
 				cmd_parser_state = REQUEST;
 				lcd_Clear(BLACK);
@@ -601,7 +580,7 @@ void modifyTimeFsm() {
 			cmd_parser_fsm();
 			if (cmd_parser_state == FINISH){
 				ds3231_Write(ADDRESS_MIN, n);
-				minTemp = n%60;
+				minTemp = n;
 				statusModifying = SET_SEC;
 				cmd_parser_state = REQUEST;
 				lcd_Clear(BLACK);
@@ -613,7 +592,7 @@ void modifyTimeFsm() {
 			cmd_parser_fsm();
 			if (cmd_parser_state == FINISH){
 				ds3231_Write(ADDRESS_SEC, n);
-				secTemp = n%60;
+				secTemp = n;
 				statusModifying = SET_DAY;
 				cmd_parser_state = IDLE;
 				lcd_Clear(BLACK);
