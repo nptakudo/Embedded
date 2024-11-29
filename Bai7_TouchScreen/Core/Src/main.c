@@ -77,13 +77,14 @@ int draw_Status = INIT;
 
 // Initialize the moving line with multiple segments
 #define SNAKE_WIDTH 10  // Width of the snake
+#define SNAKE_LENGTH 100  // Length of the snake
 #define MAX_DOTS 5     // Maximum number of food dots
 
 MovingLine line = {
-    .x1 = 500,
+    .x1 = 120,           // Starting head position
     .y1 = 160,
-    .x2 = 500,
-    .y2 = 300,  // Much longer initial length
+    .x2 = 120,           // Starting tail position
+    .y2 = 160 + SNAKE_LENGTH,  // Initial length
     .dx1 = 0,
     .dy1 = 0,
     .dx2 = 0,
@@ -339,15 +340,23 @@ void updateMovingLine() {
         }
     }
     
-    // Update positions
+    // Update head position
     line.x1 += line.dx1;
     line.y1 += line.dy1;
     
-    // Make second point follow first point (snake-like behavior)
-    line.x2 = oldX;
-    line.y2 = oldY;
+    // Calculate vector from head to tail
+    float dx = line.x2 - line.x1;
+    float dy = line.y2 - line.y1;
+    float currentLength = sqrt(dx*dx + dy*dy);
     
-    // Boundary checking for first point
+    // Adjust tail position to maintain constant length
+    if(currentLength != 0) {
+        float scale = SNAKE_LENGTH / currentLength;
+        line.x2 = line.x1 + dx * scale;
+        line.y2 = line.y1 + dy * scale;
+    }
+    
+    // Boundary checking for head
     if (line.x1 <= SNAKE_WIDTH/2) line.x1 = SNAKE_WIDTH/2;
     if (line.x1 >= lcddev.width - SNAKE_WIDTH/2) line.x1 = lcddev.width - SNAKE_WIDTH/2;
     if (line.y1 <= 60 + SNAKE_WIDTH/2) line.y1 = 60 + SNAKE_WIDTH/2;
@@ -355,7 +364,7 @@ void updateMovingLine() {
     
     // Create new dot every 3 seconds
     uint32_t currentTime = HAL_GetTick();
-    if(currentTime - lastDotTime >= 3000) {  // 3000ms = 3 seconds
+    if(currentTime - lastDotTime >= 3000) {
         createRandomDot();
         lastDotTime = currentTime;
     }
