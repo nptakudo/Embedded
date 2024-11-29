@@ -61,7 +61,32 @@
 #define DRAW 1
 #define CLEAR 2
 
+typedef struct {
+    uint16_t x1;
+    uint16_t y1; 
+    uint16_t x2;
+    uint16_t y2;
+    int16_t dx1;  // Movement delta for x1
+    int16_t dy1;  // Movement delta for y1
+    int16_t dx2;  // Movement delta for x2
+    int16_t dy2;  // Movement delta for y2
+    uint16_t color;
+} MovingLine;
+
 int draw_Status = INIT;
+
+// Initialize the moving line
+MovingLine line = {
+    .x1 = 20,
+    .y1 = 100,
+    .x2 = 100,
+    .y2 = 180,
+    .dx1 = 2,
+    .dy1 = 3,
+    .dx2 = -3,
+    .dy2 = -2,
+    .color = RED
+};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -136,6 +161,7 @@ int main(void)
 		  flag_timer2 = 0;
 		  touchProcess();
 		  test_LedDebug();
+		  updateMovingLine();
 	  }
 
     /* USER CODE END WHILE */
@@ -236,6 +262,36 @@ void touchProcess(){
 		default:
 			break;
 	}
+}
+
+void updateMovingLine() {
+    // Clear previous line
+    lcd_DrawLine(line.x1, line.y1, line.x2, line.y2, BLACK);
+    
+    // Update positions
+    line.x1 += line.dx1;
+    line.y1 += line.dy1;
+    line.x2 += line.dx2;
+    line.y2 += line.dy2;
+    
+    // Bounce off screen edges for first point
+    if (line.x1 <= 0 || line.x1 >= lcddev.width) {
+        line.dx1 = -line.dx1;
+    }
+    if (line.y1 <= 60 || line.y1 >= lcddev.height) {  // Start at y=60 to avoid button area
+        line.dy1 = -line.dy1;
+    }
+    
+    // Bounce off screen edges for second point
+    if (line.x2 <= 0 || line.x2 >= lcddev.width) {
+        line.dx2 = -line.dx2;
+    }
+    if (line.y2 <= 60 || line.y2 >= lcddev.height) {  // Start at y=60 to avoid button area
+        line.dy2 = -line.dy2;
+    }
+    
+    // Draw new line
+    lcd_DrawLine(line.x1, line.y1, line.x2, line.y2, line.color);
 }
 /* USER CODE END 4 */
 
