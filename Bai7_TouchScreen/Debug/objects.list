@@ -12,6 +12,7 @@
 "./Core/Src/main.o"
 "./Core/Src/picture.o"
 "./Core/Src/sensor.o"
+"./Core/Src/snake_game.o"
 "./Core/Src/software_timer.o"
 "./Core/Src/spi.o"
 "./Core/Src/stm32f4xx_hal_msp.o"
