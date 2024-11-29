@@ -145,7 +145,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
- touch_Adjust();
+//  touch_Adjust();
  lcd_Clear(BLACK);
  while (1)
   {

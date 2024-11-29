@@ -10,7 +10,7 @@
 *.ko
 *.obj
 *.elf
-
+*.list
 # Linker output
 *.ilk
 *.map
@@ -40,6 +40,7 @@
 *.x86_64
 *.hex
 
+Debug/
 # Debug files
 *.dSYM/
 *.su
