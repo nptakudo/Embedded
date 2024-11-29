@@ -80,9 +80,9 @@ int draw_Status = INIT;
 #define MAX_DOTS 5     // Maximum number of food dots
 
 MovingLine line = {
-    .x1 = 120,
+    .x1 = 500,
     .y1 = 160,
-    .x2 = 120,
+    .x2 = 500,
     .y2 = 300,  // Much longer initial length
     .dx1 = 0,
     .dy1 = 0,
